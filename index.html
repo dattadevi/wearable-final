@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wearable Birthday Wish System</title>
     
-    <!-- Required Libraries for Architecture Components -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -19,7 +18,6 @@
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { margin: 0; background: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; }
         
-        /* ⌚ WEARABLE DEVICE UI (SENDER) */
         .wearable-container {
             width: 340px; height: 450px; background: #000; border-radius: 60px;
             border: 14px solid #334155; box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 15px rgba(255,255,255,0.1);
@@ -39,28 +37,24 @@
             background: var(--accent); color: #000; cursor: pointer; margin-bottom: 10px; transition: 0.2s;
         }
         button:hover { filter: brightness(1.1); }
+        button:disabled { background: #475569; cursor: not-allowed; }
         .btn-capture { background: #db2777; color: white; }
         .btn-success { background: var(--success); color: white; }
         
-        /* 📸 CAMERA MODULE */
         #camera-feed { width: 100%; border-radius: 12px; background: #222; margin-bottom: 10px; object-fit: cover; height: 180px; }
         #canvas-capture { display: none; }
         
-        /* 🔒 SYSTEM LOGS */
         .sys-log { font-family: monospace; font-size: 0.7rem; color: #4ade80; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: left; }
         
-        /* 📱 RECIPIENT VIEWER UI */
         .viewer-container {
             width: 100vw; height: 100vh; background: radial-gradient(circle, #1e293b, #0f172a);
             display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
         }
         .viewer-container.active { display: flex; }
         
-        /* 🔐 AUTHENTICATION GATE */
         .auth-gate { background: rgba(255,255,255,0.05); padding: 40px; border-radius: 24px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); max-width: 400px; width: 100%; }
         #recipient-password { text-align: center; font-size: 1.5rem; letter-spacing: 5px; font-weight: bold; background: rgba(0,0,0,0.5); border: 2px solid var(--accent); }
         
-        /* 🎨 ANIMATION ENGINE */
         .animated-text { font-family: 'Pacifico', cursive; font-size: 3rem; color: #fde047; text-shadow: 0 0 20px rgba(253,224,71,0.5); opacity: 0; }
         .typewriter { overflow: hidden; white-space: pre-wrap; margin: 0 auto; letter-spacing: 2px; animation: typing 3s steps(40, end), blink-caret .75s step-end infinite; }
         .fade-in { animation: fadeIn 2s forwards; animation-delay: 1s; }
@@ -69,33 +63,23 @@
         .memory-frame { width: 100%; max-width: 350px; border-radius: 20px; border: 4px solid #fde047; margin-top: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); opacity: 0; transform: translateY(50px); animation: slideUp 1.5s forwards; animation-delay: 2.5s; }
         @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
         
-        /* 🚫 ANTI-SCREENSHOT BLUR */
         .blur-screen { filter: blur(20px) grayscale(100%); pointer-events: none; }
         .watermark { position: absolute; bottom: 10px; right: 10px; font-size: 0.6rem; color: rgba(255,255,255,0.3); pointer-events: none; z-index: 100; }
-        
         #qrcode { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <!-- ========================================== -->
-    <!-- LAYER 1: WEARABLE ORCHESTRATOR (SENDER)    -->
-    <!-- ========================================== -->
+    <!-- WEARABLE SENDER -->
     <div id="wearable-device" class="wearable-container">
-        
-        <!-- Screen 1: Create Wish -->
         <div id="screen-compose" class="screen active">
             <h2>🎂 Birthday Wish</h2>
             <input type="text" id="contact-name" placeholder="Contact Name" value="Alex">
             <textarea id="wish-message" rows="2" placeholder="Message...">Happy 25th Birthday! 🎉</textarea>
-            
-            <!-- NEW: Password Input -->
             <input type="password" id="wish-password" placeholder="Set Password (e.g. 1234)" style="border: 2px solid var(--accent);">
-            
             <button onclick="navTo('screen-capture')">Next: Capture Moment 📸</button>
         </div>
 
-        <!-- Screen 2: Capture Module -->
         <div id="screen-capture" class="screen">
             <h2>📸 Smart Capture</h2>
             <video id="camera-feed" autoplay playsinline></video>
@@ -104,43 +88,31 @@
             <button onclick="navTo('screen-compose')" style="background:transparent; border:1px solid #475569; color:white;">Back</button>
         </div>
 
-        <!-- Screen 3: Privacy & Encryption Engine -->
         <div id="screen-encrypting" class="screen">
-            <h2>🔐 Securing Data</h2>
+            <h2>☁️ Syncing to Cloud</h2>
             <div id="sys-log-box" class="sys-log">
-                > Initializing Privacy Engine...<br>
+                > Initializing Engine...<br>
             </div>
         </div>
 
-        <!-- Screen 4: Delivery Module -->
         <div id="screen-delivery" class="screen">
             <h2>📨 Ready to Send</h2>
             <div id="qrcode"></div>
             <button class="btn-success" onclick="copySecureUrl()">📋 Copy Secure Link</button>
-            <button onclick="testRecipientView()" style="background:transparent; border:1px solid #475569; color:white;">👁️ Test View</button>
             <div style="font-size: 0.7rem; text-align: center; margin-top:10px; color:#94a3b8;">Protected by AES-256 + Password</div>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- LAYER 2: RECIPIENT VIEWER & AUTHENTICATION -->
-    <!-- ========================================== -->
+    <!-- RECIPIENT VIEWER -->
     <div id="viewer-device" class="viewer-container">
-        
-        <!-- Auth Gate with Password -->
         <div id="auth-gate" class="auth-gate">
             <h2 style="color:white; font-size:1.8rem; margin-bottom: 5px;">🔒 Private Wish</h2>
             <p style="color:#94a3b8; font-size:0.9rem; margin-bottom: 20px;">Enter the secret password to decrypt.</p>
-            
             <input type="password" id="recipient-password" placeholder="••••">
-            <button class="btn-success" onclick="authenticateRecipient()">🔓 Unlock Wish</button>
-            
-            <div class="sys-log" style="text-align: center; margin-top:20px;">
-                E2E Encrypted • 1 View Only • Auto-Destruct
-            </div>
+            <button id="unlock-btn" class="btn-success" onclick="authenticateRecipient()">🔓 Unlock Wish</button>
+            <div class="sys-log" style="text-align: center; margin-top:20px;">Live Cloud Vault • E2E Encrypted</div>
         </div>
 
-        <!-- Animation Engine & Render -->
         <div id="render-canvas" style="display:none; flex-direction:column; align-items:center;">
             <div id="animated-msg" class="animated-text typewriter"></div>
             <img id="decrypted-media" class="memory-frame" src="">
@@ -149,43 +121,29 @@
     </div>
 
     <script>
-        // --- ARCHITECTURE STATE ---
-        const AppState = {
-            capturedImageBase64: null,
-            secureUrl: null,
-            cameraStream: null
-        };
+        const AppState = { capturedImageBase64: null, secureUrl: null, cameraStream: null };
 
-        // --- MODULE: WEARABLE UI CONTROLLER ---
         function navTo(screenId) {
-            // Basic validation
             if (screenId === 'screen-capture' && !document.getElementById('wish-password').value) {
-                alert("Please set a password to secure the wish!");
-                return;
+                alert("Please set a password!"); return;
             }
-
             document.querySelectorAll('.wearable-container .screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
-            
             if(screenId === 'screen-capture') startCamera();
             if(screenId !== 'screen-capture') stopCamera();
         }
 
-        // --- MODULE: SMART CAPTURE ENGINE ---
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 document.getElementById('camera-feed').srcObject = stream;
                 AppState.cameraStream = stream;
             } catch (err) {
-                alert("Camera access denied. Using fallback image.");
                 AppState.capturedImageBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="; 
             }
         }
 
-        function stopCamera() {
-            if(AppState.cameraStream) AppState.cameraStream.getTracks().forEach(track => track.stop());
-        }
+        function stopCamera() { if(AppState.cameraStream) AppState.cameraStream.getTracks().forEach(t => t.stop()); }
 
         function captureMoment() {
             const video = document.getElementById('camera-feed');
@@ -194,189 +152,144 @@
                 canvas.width = video.videoWidth; canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // Add Invisible Forensic Watermark
                 ctx.fillStyle = "rgba(255,255,255,0.1)";
                 ctx.font = "20px Arial";
                 ctx.fillText(`Captured: ${new Date().toISOString()}`, 10, 30);
-                
-                AppState.capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                // Heavy compression so it uploads to the cloud fast
+                AppState.capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.4); 
             }
             executePrivacyEngine();
         }
 
-        // --- MODULE: PRIVACY & ENCRYPTION ENGINE ---
+        // --- REAL CLOUD UPLOAD ENGINE ---
         async function executePrivacyEngine() {
             navTo('screen-encrypting');
             const logBox = document.getElementById('sys-log-box');
             const appendLog = (msg) => { logBox.innerHTML += `> ${msg}<br>`; };
 
-            // 1. Pack Data
             const payload = {
                 name: document.getElementById('contact-name').value,
                 message: document.getElementById('wish-message').value,
                 image: AppState.capturedImageBase64,
-                timestamp: Date.now(),
-                exp: Date.now() + (72 * 60 * 60 * 1000), // 72 Hours
-                views: 0, maxViews: 1
+                timestamp: Date.now()
             };
 
             const userPassword = document.getElementById('wish-password').value;
+            const secretKey = CryptoJS.lib.WordArray.random(256/8).toString();
+            const compositeKey = secretKey + userPassword;
 
-            setTimeout(() => { appendLog("Compiling payload..."); }, 500);
+            appendLog("Encrypting with AES-256...");
+            const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(payload), compositeKey).toString();
+
+            appendLog("Uploading to live JSON Cloud...");
             
-            // 2. Generate Key & Encrypt (AES-256)
-            setTimeout(() => {
-                appendLog("Generating Random URL Token...");
-                const secretKey = CryptoJS.lib.WordArray.random(256/8).toString();
-                const vaultId = CryptoJS.lib.WordArray.random(128/8).toString();
+            try {
+                // Uploading to a real, public JSON bin for cross-device sharing
+                const response = await fetch('https://jsonblob.com/api/jsonBlob', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ vault_data: encryptedData, status: "active" })
+                });
+
+                const locationUrl = response.headers.get('Location');
+                const vaultId = locationUrl.split('/').pop();
+
+                appendLog("✅ Cloud sync successful!");
                 
-                // COMPOSITE ENCRYPTION: We combine the random secretKey + userPassword
-                const compositeKey = secretKey + userPassword;
-
-                appendLog("Encrypting with Composite Key (URL Token + Password)...");
-                const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(payload), compositeKey).toString();
-
-                // 3. Store in Cloud Vault
-                appendLog("Uploading to Secure Vault...");
-                localStorage.setItem(`vault_${vaultId}`, encryptedData);
-
-                // 4. Generate URL
                 const baseUrl = window.location.href.split('?')[0];
                 AppState.secureUrl = `${baseUrl}?wish=${vaultId}#key=${secretKey}`;
                 
-                setTimeout(() => { buildDeliveryModule(AppState.secureUrl); }, 1500);
-            }, 1000);
+                setTimeout(() => { buildDeliveryModule(AppState.secureUrl); }, 1000);
+            } catch(e) {
+                appendLog("❌ Cloud Upload Failed. Check internet.");
+            }
         }
 
-        // --- MODULE: DELIVERY SYSTEM ---
         function buildDeliveryModule(url) {
             navTo('screen-delivery');
             document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById('qrcode'), {
-                text: url, width: 128, height: 128, colorDark: "#000", colorLight: "#fff"
-            });
+            new QRCode(document.getElementById('qrcode'), { text: url, width: 128, height: 128, colorDark: "#000", colorLight: "#fff" });
         }
 
         function copySecureUrl() {
             navigator.clipboard.writeText(AppState.secureUrl);
-            alert("Secure Link Copied! Send it, and don't forget to tell them the password!");
+            alert("Secure Link Copied! You can now send this to any device in the world!");
         }
 
-        function testRecipientView() { window.location.href = AppState.secureUrl; }
-
-
-        // ==========================================
-        // RECIPIENT LOGIC (Executes on Link Open)
-        // ==========================================
+        // --- RECIPIENT LOGIC ---
         window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const vaultId = urlParams.get('wish');
-            
+            const vaultId = new URLSearchParams(window.location.search).get('wish');
             if (vaultId) {
-                // Switch to Recipient UI
                 document.getElementById('wearable-device').style.display = 'none';
                 document.getElementById('viewer-device').classList.add('active');
-                
-                // ANTI-SCREENSHOT ENGINE
-                document.addEventListener('visibilitychange', () => {
-                    if(document.hidden) document.body.classList.add('blur-screen');
-                    else document.body.classList.remove('blur-screen');
-                });
-                document.addEventListener('keyup', (e) => {
-                    if (e.key === 'PrintScreen' || e.key === 'Meta') {
-                        document.body.classList.add('blur-screen');
-                        alert("Privacy Engine: Screenshots are disabled.");
-                        setTimeout(() => document.body.classList.remove('blur-screen'), 2000);
-                    }
-                });
             }
         };
 
-        function authenticateRecipient() {
+        async function authenticateRecipient() {
             const vaultId = new URLSearchParams(window.location.search).get('wish');
-            const secretKey = window.location.hash.substring(5); // Extract #key=
+            const secretKey = window.location.hash.substring(5);
             const enteredPassword = document.getElementById('recipient-password').value;
+            const btn = document.getElementById('unlock-btn');
 
-            if (!enteredPassword) {
-                alert("Please enter the password."); return;
-            }
+            if (!enteredPassword) { alert("Please enter the password."); return; }
 
-            const encryptedBlob = localStorage.getItem(`vault_${vaultId}`);
-            
-            if(!encryptedBlob) {
-                alert("Vault Error: This wish has expired or self-destructed.");
-                return;
-            }
+            btn.innerText = "Downloading from Cloud...";
+            btn.disabled = true;
 
             try {
-                // Reconstruct the Composite Key
-                const compositeKey = secretKey + enteredPassword;
+                // Fetch from the real internet cloud
+                const response = await fetch(`https://jsonblob.com/api/jsonBlob/${vaultId}`);
+                if (!response.ok) throw new Error("Not Found");
+                
+                const cloudData = await response.json();
 
-                // Client-Side Decryption
-                const bytes = CryptoJS.AES.decrypt(encryptedBlob, compositeKey);
+                if(cloudData.status === "destroyed") {
+                    alert("This wish has self-destructed and is gone forever.");
+                    btn.innerText = "🔓 Unlock Wish"; btn.disabled = false;
+                    return;
+                }
+
+                const compositeKey = secretKey + enteredPassword;
+                const bytes = CryptoJS.AES.decrypt(cloudData.vault_data, compositeKey);
                 const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
 
-                if (!decryptedString) {
-                    throw new Error("Wrong Password"); // Triggers the catch block
-                }
+                if (!decryptedString) throw new Error("Wrong Password");
 
                 const decryptedPayload = JSON.parse(decryptedString);
 
-                // Verification Constraints
-                if (Date.now() > decryptedPayload.exp) {
-                    localStorage.removeItem(`vault_${vaultId}`);
-                    alert("This wish has expired."); return;
-                }
-                if (decryptedPayload.views >= decryptedPayload.maxViews) {
-                    localStorage.removeItem(`vault_${vaultId}`);
-                    alert("Maximum views reached. Wish self-destructed."); return;
-                }
-
-                // Increment View & Self-Destruct trigger
-                decryptedPayload.views += 1;
-                if (decryptedPayload.views >= decryptedPayload.maxViews) {
-                     localStorage.removeItem(`vault_${vaultId}`); // Auto-purge
-                } else {
-                     const reEncrypted = CryptoJS.AES.encrypt(JSON.stringify(decryptedPayload), compositeKey).toString();
-                     localStorage.setItem(`vault_${vaultId}`, reEncrypted);
-                }
+                // Self-Destruct Trigger (Overwrites the data in the cloud)
+                await fetch(`https://jsonblob.com/api/jsonBlob/${vaultId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vault_data: null, status: "destroyed" })
+                });
 
                 renderAnimationEngine(decryptedPayload);
 
             } catch (e) {
-                // Shake effect on wrong password
                 const passInput = document.getElementById('recipient-password');
                 passInput.style.borderColor = "var(--danger)";
                 passInput.value = "";
-                passInput.placeholder = "Wrong Password";
+                passInput.placeholder = "Wrong Password / Expired";
                 setTimeout(() => { passInput.style.borderColor = "var(--accent)"; passInput.placeholder = "••••"; }, 1500);
+                btn.innerText = "🔓 Unlock Wish"; btn.disabled = false;
             }
         }
 
-        // --- MODULE: ANIMATION ENGINE ---
         function renderAnimationEngine(data) {
             document.getElementById('auth-gate').style.display = 'none';
             const renderCanvas = document.getElementById('render-canvas');
             renderCanvas.style.display = 'flex';
 
-            // 1. Text Animation Layer
             const msgEl = document.getElementById('animated-msg');
             msgEl.innerText = `${data.name},\n${data.message}`;
             msgEl.classList.add('fade-in');
 
-            // 2. Media Compositor Layer
-            if(data.image) {
-                const imgEl = document.getElementById('decrypted-media');
-                imgEl.src = data.image;
-            }
+            if(data.image) document.getElementById('decrypted-media').src = data.image;
 
-            // 3. Watermark Layer
             document.getElementById('forensic-watermark').innerText = `Viewed by ${data.name} | ${new Date().toISOString()}`;
 
-            // 4. Particle Effects
-            const duration = 5 * 1000;
-            const end = Date.now() + duration;
+            const end = Date.now() + 5000;
             (function frame() {
                 confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#fde047', '#38bdf8'] });
                 confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#fde047', '#db2777'] });
