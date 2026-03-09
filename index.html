@@ -76,7 +76,7 @@
         <div id="screen-encrypting" class="screen">
             <h2>☁️ Syncing to Cloud</h2>
             <div id="sys-log-box" class="sys-log">
-                > Initializing Rest API Engine...<br>
+                > Initializing High-Capacity Engine...<br>
             </div>
         </div>
 
@@ -84,7 +84,7 @@
             <h2>📨 Scan with Phone</h2>
             <div id="qrcode"></div>
             <button class="btn-success" onclick="copySecureUrl()">📋 Copy Secure Link</button>
-            <div style="font-size: 0.7rem; text-align: center; margin-top:10px; color:#94a3b8;">Cross-Device Cloud Vault Active</div>
+            <div style="font-size: 0.7rem; text-align: center; margin-top:10px; color:#94a3b8;">High-Capacity Cloud Vault Active</div>
         </div>
     </div>
 
@@ -134,19 +134,18 @@
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('canvas-capture');
             if(video.srcObject) {
-                // Compress image so cloud API accepts it instantly
-                const targetWidth = 300; 
+                const targetWidth = 400; // Increased quality because ByteBin can handle large files!
                 const scale = targetWidth / video.videoWidth;
                 canvas.width = targetWidth;
                 canvas.height = video.videoHeight * scale;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                AppState.capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.4); 
+                AppState.capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
             }
             executePrivacyEngine();
         }
 
-        // --- GLOBAL CLOUD UPLOAD ENGINE ---
+        // --- BYTEBIN CLOUD ENGINE (NO SIZE LIMITS) ---
         async function executePrivacyEngine() {
             navTo('screen-encrypting');
             const logBox = document.getElementById('sys-log-box');
@@ -165,33 +164,30 @@
             appendLog("Encrypting with AES-256...");
             const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(payload), compositeKey).toString();
 
-            appendLog("Uploading to Public Developer Cloud...");
+            appendLog("Uploading to High-Capacity Data Vault...");
             
             try {
-                // Using restful-api.dev (Zero ad-blocker restrictions, stable cross-device)
-                const response = await fetch('https://api.restful-api.dev/objects', {
+                // Using ByteBin (A raw-text vault that handles HUGE file sizes flawlessly)
+                const response = await fetch('https://bytebin.lucko.me/post', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: "SecureWearableWish",
-                        data: { cipher: encryptedData }
-                    })
+                    headers: { 'Content-Type': 'text/plain' }, // Send as raw text to bypass CORS blocks
+                    body: encryptedData
                 });
 
                 if (!response.ok) throw new Error("Network Error");
 
                 const cloudRes = await response.json();
-                const vaultId = cloudRes.id; // Get the unique cloud ID
+                const vaultId = cloudRes.key; // ByteBin returns a unique key
 
                 appendLog("✅ Cloud sync successful!");
                 
-                // Build a clean, short URL for the other device
                 const baseUrl = window.location.href.split('?')[0].split('#')[0];
                 AppState.secureUrl = `${baseUrl}?id=${vaultId}#k=${secretKey}`;
                 
                 setTimeout(() => { buildDeliveryModule(AppState.secureUrl); }, 1000);
             } catch(e) {
-                appendLog(`❌ Upload Failed. Check internet connection.`);
+                appendLog(`❌ Upload Failed: ${e.message}`);
+                appendLog(`Attempted to send ${Math.round(encryptedData.length / 1024)} KB.`);
             }
         }
 
@@ -203,13 +199,13 @@
 
         function copySecureUrl() {
             navigator.clipboard.writeText(AppState.secureUrl);
-            alert("✅ Secure Link Copied! You can now paste this into your phone or send it via WhatsApp.");
+            alert("✅ Secure Link Copied! You can now scan the QR code or send the link to any device.");
         }
 
-        // --- RECIPIENT LOGIC (OPENS ON OTHER DEVICE) ---
+        // --- RECIPIENT LOGIC (OPENS ON PHONE) ---
         window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('id')) {
+            const urlParams = newSearchParams = new URLSearchParams(window.location.search);
+            if (newSearchParams.get('id')) {
                 document.getElementById('wearable-device').style.display = 'none';
                 document.getElementById('viewer-device').classList.add('active');
             }
@@ -218,7 +214,7 @@
         async function authenticateRecipient() {
             const urlParams = new URLSearchParams(window.location.search);
             const vaultId = urlParams.get('id');
-            const secretKey = window.location.hash.substring(3); // Extract the key after #k=
+            const secretKey = window.location.hash.substring(3); 
             
             const enteredPassword = document.getElementById('recipient-password').value;
             const btn = document.getElementById('unlock-btn');
@@ -229,12 +225,11 @@
             btn.disabled = true;
 
             try {
-                // Fetch the encrypted data from the public cloud
-                const response = await fetch(`https://api.restful-api.dev/objects/${vaultId}`);
+                // Fetch the encrypted RAW text from ByteBin
+                const response = await fetch(`https://bytebin.lucko.me/${vaultId}`);
                 if (!response.ok) throw new Error("Data not found in cloud.");
                 
-                const cloudData = await response.json();
-                const encryptedString = cloudData.data.cipher;
+                const encryptedString = await response.text(); // Read as raw text
 
                 // Rebuild the master key
                 const compositeKey = secretKey + enteredPassword;
