@@ -27,7 +27,6 @@
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 12px; background: var(--panel-bg); color: white; border: 1px solid #475569; outline: none; }
         button { width: 100%; padding: 14px; border-radius: 25px; border: none; font-weight: 600; background: var(--accent); color: #000; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
         button:hover { filter: brightness(1.1); }
-        button:disabled { background: #475569; cursor: not-allowed; }
         .btn-capture { background: #db2777; color: white; }
         .btn-success { background: var(--success); color: white; }
         
@@ -49,9 +48,6 @@
         
         .memory-frame { width: 100%; max-width: 300px; border-radius: 20px; border: 4px solid #fde047; margin-top: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); opacity: 0; transform: translateY(50px); animation: slideUp 1.5s forwards; animation-delay: 2.5s; }
         @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
-        
-        .blur-screen { filter: blur(20px) grayscale(100%); pointer-events: none; }
-        .watermark { position: absolute; bottom: 10px; right: 10px; font-size: 0.6rem; color: rgba(255,255,255,0.3); pointer-events: none; z-index: 100; }
         #qrcode { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-bottom: 10px; }
     </style>
 </head>
@@ -63,7 +59,10 @@
             <h2>🎂 Birthday Wish</h2>
             <input type="text" id="contact-name" placeholder="Contact Name" value="Alex">
             <textarea id="wish-message" rows="2" placeholder="Message...">Happy 25th Birthday! 🎉</textarea>
-            <input type="password" id="wish-password" placeholder="Set Password (e.g. 1234)" style="border: 2px solid var(--accent);">
+            
+            <p style="font-size: 0.8rem; margin-bottom: 5px;">Set a password to lock the wish:</p>
+            <input type="password" id="wish-password" placeholder="Create a password (e.g. 1234)" style="border: 2px solid var(--accent);">
+            
             <button onclick="navTo('screen-capture')">Next: Capture Moment 📸</button>
         </div>
 
@@ -86,7 +85,7 @@
             <h2>📨 Ready to Send</h2>
             <div id="qrcode"></div>
             <button class="btn-success" onclick="copySecureUrl()">📋 Copy Secure Link</button>
-            <div style="font-size: 0.7rem; text-align: center; margin-top:10px; color:#94a3b8;">100% Ad-Blocker Proof Architecture</div>
+            <div style="font-size: 0.7rem; text-align: center; margin-top:10px; color:#94a3b8;">Data safely embedded in URL.</div>
         </div>
     </div>
 
@@ -94,16 +93,16 @@
     <div id="viewer-device" class="viewer-container">
         <div id="auth-gate" class="auth-gate">
             <h2 style="color:white; font-size:1.8rem; margin-bottom: 5px;">🔒 Private Wish</h2>
-            <p style="color:#94a3b8; font-size:0.9rem; margin-bottom: 20px;">Enter the secret password to decrypt.</p>
-            <input type="password" id="recipient-password" placeholder="••••">
-            <button id="unlock-btn" class="btn-success" onclick="authenticateRecipient()">🔓 Unlock Wish</button>
-            <div class="sys-log" style="text-align: center; margin-top:20px;">Stateless Vault • E2E Encrypted</div>
+            <p style="color:#94a3b8; font-size:0.9rem; margin-bottom: 20px;">Enter the password you created to view it.</p>
+            
+            <input type="password" id="recipient-password" placeholder="Type password here...">
+            <button class="btn-success" onclick="authenticateRecipient()">🔓 Unlock Wish</button>
         </div>
 
         <div id="render-canvas" style="display:none; flex-direction:column; align-items:center;">
             <div id="animated-msg" class="animated-text typewriter"></div>
             <img id="decrypted-media" class="memory-frame" src="">
-            <div class="watermark" id="forensic-watermark"></div>
+            <div style="margin-top: 15px; font-size: 0.8rem; color: #4ade80;">✅ Decrypted locally</div>
         </div>
     </div>
 
@@ -112,7 +111,7 @@
 
         function navTo(screenId) {
             if (screenId === 'screen-capture' && !document.getElementById('wish-password').value) {
-                alert("Please set a password!"); return;
+                alert("Please type a password first!"); return;
             }
             document.querySelectorAll('.wearable-container .screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
@@ -126,7 +125,7 @@
                 document.getElementById('camera-feed').srcObject = stream;
                 AppState.cameraStream = stream;
             } catch (err) {
-                // Dummy image if camera fails
+                // Base64 of a tiny dummy image if camera is blocked
                 AppState.capturedImageBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="; 
             }
         }
@@ -137,24 +136,21 @@
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('canvas-capture');
             if(video.srcObject) {
-                // HEAVY COMPRESSION: Make the image tiny so it fits inside the URL
-                const targetWidth = 150; 
+                // Shrink image to very small size so the URL doesn't break
+                const targetWidth = 100; 
                 const scale = targetWidth / video.videoWidth;
                 canvas.width = targetWidth;
                 canvas.height = video.videoHeight * scale;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "rgba(255,255,255,0.7)";
-                ctx.font = "8px Arial";
-                ctx.fillText(`Secure: ${new Date().toLocaleTimeString()}`, 5, 15);
                 
-                // Compress to 20% quality for URL embedding
-                AppState.capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.2); 
+                // Compress to 10% quality
+                AppState.capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.1); 
             }
             executePrivacyEngine();
         }
 
-        // --- STATELESS ZERO-KNOWLEDGE ENGINE ---
+        // --- ENCRYPTION ENGINE ---
         function executePrivacyEngine() {
             navTo('screen-encrypting');
             const logBox = document.getElementById('sys-log-box');
@@ -163,22 +159,20 @@
             const payload = {
                 name: document.getElementById('contact-name').value,
                 message: document.getElementById('wish-message').value,
-                image: AppState.capturedImageBase64,
-                exp: Date.now() + (72 * 60 * 60 * 1000) // 72 Hours expiry
+                image: AppState.capturedImageBase64
             };
 
             const userPassword = document.getElementById('wish-password').value;
-            const secretKey = CryptoJS.lib.WordArray.random(128/8).toString(); // Short key
+            const secretKey = CryptoJS.lib.WordArray.random(128/8).toString(); 
             const compositeKey = secretKey + userPassword;
 
             setTimeout(() => {
                 appendLog("Encrypting with AES-256...");
                 const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(payload), compositeKey).toString();
 
-                appendLog("Bypassing Network entirely...");
-                appendLog("Embedding payload into URL Hash...");
+                appendLog("Embedding securely into URL...");
                 
-                // Put everything directly into the URL (No cloud needed!)
+                // Pack directly into the URL (NO cloud servers used!)
                 const baseUrl = window.location.href.split('?')[0].split('#')[0];
                 const safePayload = encodeURIComponent(encryptedData);
                 
@@ -192,16 +186,15 @@
         function buildDeliveryModule(url) {
             navTo('screen-delivery');
             document.getElementById('qrcode').innerHTML = "";
-            // Use just the base URL for QR to keep it scannable, but full link for copy
             new QRCode(document.getElementById('qrcode'), { text: url, width: 128, height: 128, colorDark: "#000", colorLight: "#fff" });
         }
 
         function copySecureUrl() {
             navigator.clipboard.writeText(AppState.secureUrl);
-            alert("Secure Link Copied! Send it via WhatsApp, Email, or Text!");
+            alert("✅ Link Copied! Open a new tab, paste the link, and type the password you just made!");
         }
 
-        // --- RECIPIENT LOGIC (STATELESS) ---
+        // --- RECIPIENT LOGIC ---
         window.onload = () => {
             if (window.location.hash.includes("data=")) {
                 document.getElementById('wearable-device').style.display = 'none';
@@ -210,23 +203,19 @@
         };
 
         function authenticateRecipient() {
-            // Extract data directly from the URL Link
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const encryptedData = hashParams.get('data');
             const secretKey = hashParams.get('k');
             
             const enteredPassword = document.getElementById('recipient-password').value;
 
-            if (!enteredPassword) { alert("Please enter the password."); return; }
-
-            // Anti-Replay Check (Simulates self-destruct)
-            if(localStorage.getItem('viewed_' + secretKey)) {
-                alert("This wish has already been viewed and self-destructed.");
-                return;
-            }
+            if (!enteredPassword) { alert("Please type the password!"); return; }
 
             try {
+                // Combine the hidden key with the password you just typed
                 const compositeKey = secretKey + enteredPassword;
+                
+                // Decrypt
                 const bytes = CryptoJS.AES.decrypt(encryptedData, compositeKey);
                 const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
 
@@ -234,24 +223,14 @@
 
                 const decryptedPayload = JSON.parse(decryptedString);
 
-                if (Date.now() > decryptedPayload.exp) {
-                    alert("This wish has expired after 72 hours."); return;
-                }
-
-                // Mark as viewed to simulate destruction
-                localStorage.setItem('viewed_' + secretKey, 'true');
-                
-                // Erase the data from the URL bar instantly so it can't be copied
-                history.replaceState(null, "", window.location.pathname);
-
                 renderAnimationEngine(decryptedPayload);
 
             } catch (e) {
                 const passInput = document.getElementById('recipient-password');
                 passInput.style.borderColor = "var(--danger)";
                 passInput.value = "";
-                passInput.placeholder = "Wrong Password";
-                setTimeout(() => { passInput.style.borderColor = "var(--accent)"; passInput.placeholder = "••••"; }, 1500);
+                passInput.placeholder = "Incorrect Password!";
+                setTimeout(() => { passInput.style.borderColor = "var(--accent)"; }, 1500);
             }
         }
 
@@ -264,9 +243,9 @@
             msgEl.innerText = `${data.name},\n${data.message}`;
             msgEl.classList.add('fade-in');
 
-            if(data.image) document.getElementById('decrypted-media').src = data.image;
-
-            document.getElementById('forensic-watermark').innerText = `Decrypted locally | Do Not Share`;
+            if(data.image) {
+                document.getElementById('decrypted-media').src = data.image;
+            }
 
             const end = Date.now() + 5000;
             (function frame() {
